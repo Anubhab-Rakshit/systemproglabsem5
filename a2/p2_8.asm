@@ -51,28 +51,50 @@ MAIN PROC
     MOV n3, AX
     CALL NEWLINE
 
-    ; GCD of n1, n2
+    ; Calculate final GCD
     MOV AX, n1
     MOV BX, n2
     CALL GCD
-    MOV gcd1, AX
-
-    ; GCD of gcd1, n3
-    MOV AX, gcd1
     MOV BX, n3
     CALL GCD
-    PUSH AX ; Save final GCD
-
+    
     LEA DX, msg_gcd
     MOV AH, 09H
     INT 21H
-    POP AX
+    CALL PRINT_NUM
+    CALL NEWLINE
+
+    ; Calculate final LCM
+    MOV AX, n1
+    MOV BX, n2
+    CALL LCM
+    MOV BX, n3
+    CALL LCM
+
+    LEA DX, msg_lcm
+    MOV AH, 09H
+    INT 21H
     CALL PRINT_NUM
     CALL NEWLINE
 
     MOV AH, 4CH
     INT 21H
 MAIN ENDP
+
+LCM PROC
+    ; Calculates LCM of AX and BX, result in AX
+    PUSH AX
+    PUSH BX
+    CALL GCD
+    MOV CX, AX ; CX = GCD
+    POP BX
+    POP AX
+    
+    MUL BX
+    DIV CX
+    
+    RET
+LCM ENDP
 
 ; Utility Procedures
 GET_NUM PROC
