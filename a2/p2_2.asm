@@ -47,12 +47,17 @@ READ_BIN:
     MOV AH, 09H
     INT 21H
     
+    MOV CL, 4
+    SHL BL, CL
     MOV CX, 4
 PRINT_BIN:
-    ROL BL, 1
-    MOV DL, BL
-    AND DL, 1
-    ADD DL, '0'
+    SHL BL, 1
+    JC PRINT_1
+    MOV DL, '0'
+    JMP PRINT_C
+PRINT_1:
+    MOV DL, '1'
+PRINT_C:
     MOV AH, 02H
     INT 21H
     LOOP PRINT_BIN
