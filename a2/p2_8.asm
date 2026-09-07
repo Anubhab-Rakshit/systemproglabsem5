@@ -9,23 +9,7 @@
     n1 DW ?
     n2 DW ?
     n3 DW ?
-    gcd1 DW ?
 .CODE
-GCD PROC
-    ; GCD of AX and BX, result in AX
-GCD_LOOP:
-    CMP AX, BX
-    JE GCD_DONE
-    JA GCD_GREATER
-    SUB BX, AX
-    JMP GCD_LOOP
-GCD_GREATER:
-    SUB AX, BX
-    JMP GCD_LOOP
-GCD_DONE:
-    RET
-GCD ENDP
-
 MAIN PROC
     MOV AX, @DATA
     MOV DS, AX
@@ -58,9 +42,11 @@ MAIN PROC
     MOV BX, n3
     CALL GCD
     
+    PUSH AX ; Save final GCD
     LEA DX, msg_gcd
     MOV AH, 09H
     INT 21H
+    POP AX
     CALL PRINT_NUM
     CALL NEWLINE
 
@@ -71,9 +57,11 @@ MAIN PROC
     MOV BX, n3
     CALL LCM
 
+    PUSH AX ; Save final LCM
     LEA DX, msg_lcm
     MOV AH, 09H
     INT 21H
+    POP AX
     CALL PRINT_NUM
     CALL NEWLINE
 
@@ -81,8 +69,34 @@ MAIN PROC
     INT 21H
 MAIN ENDP
 
+GCD PROC
+    ; GCD of AX and BX using Division (Euclidean Algorithm)
+    ; Result in AX
+    CMP AX, 0
+    JE GCD_B_RES
+    CMP BX, 0
+    JE GCD_DONE
+GCD_LOOP:
+    MOV DX, 0
+    DIV BX
+    CMP DX, 0
+    JE GCD_B_RES
+    MOV AX, BX
+    MOV BX, DX
+    JMP GCD_LOOP
+GCD_B_RES:
+    MOV AX, BX
+GCD_DONE:
+    RET
+GCD ENDP
+
 LCM PROC
     ; Calculates LCM of AX and BX, result in AX
+    CMP AX, 0
+    JE LCM_ZERO
+    CMP BX, 0
+    JE LCM_ZERO
+    
     PUSH AX
     PUSH BX
     CALL GCD
@@ -90,9 +104,15 @@ LCM PROC
     POP BX
     POP AX
     
+    ; DX:AX = AX * BX
+    MOV DX, 0
     MUL BX
-    DIV CX
     
+    ; DX:AX / CX
+    DIV CX
+    RET
+LCM_ZERO:
+    MOV AX, 0
     RET
 LCM ENDP
 
@@ -103,13 +123,33 @@ GET_NUM PROC
     PUSH DX
     MOV BX, 0
     MOV CX, 10
+    
+SKIP_NON_DIGIT:
     MOV AH, 01H
+    INT 21H
+    CMP AL, 13
+    JE END_GET_NUM
+    CMP AL, '0'
+    JB SKIP_NON_DIGIT
+    CMP AL, '9'
+    JA SKIP_NON_DIGIT
+    
+    SUB AL, '0'
+    MOV AH, 0
+    MOV BX, AX
+
 READ_CHAR:
+    MOV AH, 01H
     INT 21H
     CMP AL, 13
     JE END_GET_NUM
     CMP AL, 32
     JE END_GET_NUM
+    CMP AL, '0'
+    JB READ_CHAR
+    CMP AL, '9'
+    JA READ_CHAR
+    
     SUB AL, '0'
     MOV AH, 0
     PUSH AX
@@ -118,7 +158,6 @@ READ_CHAR:
     POP DX
     ADD AX, DX
     MOV BX, AX
-    MOV AH, 01H
     JMP READ_CHAR
 END_GET_NUM:
     MOV AX, BX
@@ -177,4 +216,5 @@ NEWLINE PROC
     POP AX
     RET
 NEWLINE ENDP
+
 END MAIN
