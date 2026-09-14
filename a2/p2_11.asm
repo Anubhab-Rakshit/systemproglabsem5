@@ -1,10 +1,12 @@
 .MODEL SMALL
 .STACK 100H
 .DATA
-    arr DW 5 DUP(?)
+    arr_sel DW 5 DUP(?)
+    arr_ins DW 5 DUP(?)
     msg_input DB 'Enter 5 numbers for the array:', 13, 10, '$'
     msg_elem DB 'Element: $'
-    msg_after DB 'Array after Selection Sort: $'
+    msg_sel DB 'Array after Selection Sort: $'
+    msg_ins DB 'Array after Insertion Sort: $'
 .CODE
 MAIN PROC
     MOV AX, @DATA
@@ -15,63 +17,116 @@ MAIN PROC
     INT 21H
 
     MOV CX, 5
-    MOV SI, OFFSET arr
+    MOV SI, 0
 READ_ARRAY:
     LEA DX, msg_elem
     MOV AH, 09H
     INT 21H
     CALL GET_NUM
-    MOV [SI], AX
+    
+    MOV arr_sel[SI], AX
+    MOV arr_ins[SI], AX
+    
     CALL NEWLINE
     ADD SI, 2
     LOOP READ_ARRAY
 
+    ; =======================
     ; Selection Sort Logic
-    MOV CX, 4               ; Outer loop count (n-1 passes)
-    MOV DI, OFFSET arr      ; Pointer i
-OUTER_LOOP:
+    ; =======================
+    MOV CX, 4               ; Outer loop count
+    MOV DI, 0               ; Pointer i (byte offset)
+SEL_OUTER_LOOP:
     MOV BX, DI              ; min_ptr = i
     MOV SI, DI
-    ADD SI, 2               ; j_ptr = i + 1
+    ADD SI, 2               ; j = i + 1
 
-INNER_LOOP:
-    MOV AX, [SI]            ; AX = arr[j]
-    MOV DX, [BX]            ; DX = arr[min_idx]
+SEL_INNER_LOOP:
+    MOV AX, arr_sel[SI]     ; arr[j]
+    MOV DX, arr_sel[BX]     ; arr[min_idx]
 
     CMP AX, DX
-    JGE NOT_LESS            ; If arr[j] >= arr[min_idx], skip
+    JGE NOT_LESS
     MOV BX, SI              ; min_idx = j
 NOT_LESS:
     ADD SI, 2
-    CMP SI, OFFSET arr + 10 ; 5 elements = 10 bytes offset
-    JL INNER_LOOP
+    CMP SI, 10
+    JL SEL_INNER_LOOP
 
     ; Swap arr[i] and arr[min_idx]
-    MOV AX, [DI]
-    MOV DX, [BX]
-    MOV [DI], DX
-    MOV [BX], AX
+    MOV AX, arr_sel[DI]
+    MOV DX, arr_sel[BX]
+    MOV arr_sel[DI], DX
+    MOV arr_sel[BX], AX
 
     ADD DI, 2
-    LOOP OUTER_LOOP
+    LOOP SEL_OUTER_LOOP
 
-    ; Print Sorted Array
-    LEA DX, msg_after
+    ; Print Selection Sorted Array
+    LEA DX, msg_sel
     MOV AH, 09H
     INT 21H
 
     MOV CX, 5
-    MOV SI, OFFSET arr
-PRINT_ARR:
-    MOV AX, [SI]
+    MOV SI, 0
+PRINT_SEL:
+    MOV AX, arr_sel[SI]
     CALL PRINT_NUM
     MOV DL, ' '
     MOV AH, 02H
     INT 21H
     ADD SI, 2
-    LOOP PRINT_ARR
-
+    LOOP PRINT_SEL
     CALL NEWLINE
+
+    ; =======================
+    ; Insertion Sort Logic
+    ; =======================
+    MOV DI, 2               ; i = 1 (second element, 2 bytes)
+INS_OUTER_LOOP:
+    MOV AX, arr_ins[DI]     ; AX = key
+    MOV SI, DI
+    SUB SI, 2               ; SI = j = i - 1
+
+INS_INNER_LOOP:
+    CMP SI, 0
+    JL INS_PLACE            ; If j < 0, break
+    
+    MOV DX, arr_ins[SI]
+    CMP DX, AX
+    JLE INS_PLACE           ; If arr[j] <= key, break
+
+    ; arr[j+1] = arr[j]
+    MOV arr_ins[SI+2], DX
+    
+    SUB SI, 2
+    JMP INS_INNER_LOOP
+
+INS_PLACE:
+    ; arr[j+1] = key
+    MOV arr_ins[SI+2], AX
+
+    ADD DI, 2
+    CMP DI, 10              ; i < 5 (10 bytes)
+    JL INS_OUTER_LOOP
+
+    ; Print Insertion Sorted Array
+    LEA DX, msg_ins
+    MOV AH, 09H
+    INT 21H
+
+    MOV CX, 5
+    MOV SI, 0
+PRINT_INS:
+    MOV AX, arr_ins[SI]
+    CALL PRINT_NUM
+    MOV DL, ' '
+    MOV AH, 02H
+    INT 21H
+    ADD SI, 2
+    LOOP PRINT_INS
+    CALL NEWLINE
+
     MOV AH, 4CH
     INT 21H
 MAIN ENDP
