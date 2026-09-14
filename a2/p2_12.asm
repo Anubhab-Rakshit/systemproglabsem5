@@ -32,8 +32,9 @@ MAIN PROC
     ; Null-terminate old_file
     MOV AL, old_len
     MOV AH, 0
-    MOV SI, AX
-    MOV old_file[SI], 0
+    LEA BX, old_file
+    ADD BX, AX
+    MOV BYTE PTR [BX], 0
 
     ; Read new filename
     LEA DX, msg_new
@@ -48,8 +49,9 @@ MAIN PROC
     ; Null-terminate new_file
     MOV AL, new_len
     MOV AH, 0
-    MOV SI, AX
-    MOV new_file[SI], 0
+    LEA BX, new_file
+    ADD BX, AX
+    MOV BYTE PTR [BX], 0
 
     ; Rename File using INT 21H, AH=56H
     MOV AH, 56H
