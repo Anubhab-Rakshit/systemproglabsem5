@@ -4,7 +4,7 @@
     msg_old DB 'Enter old filename: $'
     msg_new DB 'Enter new filename: $'
     msg_ok DB 'Renamed successfully!', 13, 10, '$'
-    msg_err DB 'Error renaming file (does it exist?).', 13, 10, '$'
+    msg_err DB 'Error: File not found, or new filename already exists!', 13, 10, '$'
 
     old_buf DB 50
     old_len DB ?
