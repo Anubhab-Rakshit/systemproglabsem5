@@ -1,35 +1,62 @@
 .MODEL SMALL
 .STACK 100H
 .DATA
-    arr DW 50, 20, 90, 10, 30
-    msg1 DB 'Array before sort: 50 20 90 10 30', 13, 10, '$'
-    msg2 DB 'Array after sort: $'
+    arr DW 5 DUP(?)
+    msg_input DB 'Enter 5 numbers for the array:', 13, 10, '$'
+    msg_elem DB 'Element: $'
+    msg_after DB 'Array after Selection Sort: $'
 .CODE
 MAIN PROC
     MOV AX, @DATA
     MOV DS, AX
 
-    LEA DX, msg1
+    LEA DX, msg_input
     MOV AH, 09H
     INT 21H
 
-    MOV CX, 4
-OUTER:
+    MOV CX, 5
     MOV SI, OFFSET arr
-    MOV DX, CX
-INNER:
-    MOV AX, [SI]
-    CMP AX, [SI+2]
-    JLE SKIP
-    XCHG AX, [SI+2]
+READ_ARRAY:
+    LEA DX, msg_elem
+    MOV AH, 09H
+    INT 21H
+    CALL GET_NUM
     MOV [SI], AX
-SKIP:
+    CALL NEWLINE
     ADD SI, 2
-    DEC DX
-    JNZ INNER
-    LOOP OUTER
+    LOOP READ_ARRAY
 
-    LEA DX, msg2
+    ; Selection Sort Logic
+    MOV CX, 4               ; Outer loop count (n-1 passes)
+    MOV DI, OFFSET arr      ; Pointer i
+OUTER_LOOP:
+    MOV BX, DI              ; min_ptr = i
+    MOV SI, DI
+    ADD SI, 2               ; j_ptr = i + 1
+
+INNER_LOOP:
+    MOV AX, [SI]            ; AX = arr[j]
+    MOV DX, [BX]            ; DX = arr[min_idx]
+
+    CMP AX, DX
+    JGE NOT_LESS            ; If arr[j] >= arr[min_idx], skip
+    MOV BX, SI              ; min_idx = j
+NOT_LESS:
+    ADD SI, 2
+    CMP SI, OFFSET arr + 10 ; 5 elements = 10 bytes offset
+    JL INNER_LOOP
+
+    ; Swap arr[i] and arr[min_idx]
+    MOV AX, [DI]
+    MOV DX, [BX]
+    MOV [DI], DX
+    MOV [BX], AX
+
+    ADD DI, 2
+    LOOP OUTER_LOOP
+
+    ; Print Sorted Array
+    LEA DX, msg_after
     MOV AH, 09H
     INT 21H
 
@@ -56,13 +83,33 @@ GET_NUM PROC
     PUSH DX
     MOV BX, 0
     MOV CX, 10
+    
+SKIP_NON_DIGIT:
     MOV AH, 01H
+    INT 21H
+    CMP AL, 13
+    JE END_GET_NUM
+    CMP AL, '0'
+    JB SKIP_NON_DIGIT
+    CMP AL, '9'
+    JA SKIP_NON_DIGIT
+    
+    SUB AL, '0'
+    MOV AH, 0
+    MOV BX, AX
+
 READ_CHAR:
+    MOV AH, 01H
     INT 21H
     CMP AL, 13
     JE END_GET_NUM
     CMP AL, 32
     JE END_GET_NUM
+    CMP AL, '0'
+    JB READ_CHAR
+    CMP AL, '9'
+    JA READ_CHAR
+    
     SUB AL, '0'
     MOV AH, 0
     PUSH AX
@@ -71,7 +118,6 @@ READ_CHAR:
     POP DX
     ADD AX, DX
     MOV BX, AX
-    MOV AH, 01H
     JMP READ_CHAR
 END_GET_NUM:
     MOV AX, BX

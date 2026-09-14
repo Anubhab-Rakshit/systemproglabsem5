@@ -1,32 +1,70 @@
 .MODEL SMALL
 .STACK 100H
 .DATA
-    old_file DB 'test.txt', 0
-    new_file DB 'renamed.txt', 0
-    msg1 DB 'Attempting to rename test.txt to renamed.txt...', 13, 10, '$'
+    msg_old DB 'Enter old filename: $'
+    msg_new DB 'Enter new filename: $'
     msg_ok DB 'Renamed successfully!', 13, 10, '$'
-    msg_err DB 'Error renaming file (does test.txt exist?).', 13, 10, '$'
+    msg_err DB 'Error renaming file (does it exist?).', 13, 10, '$'
+
+    old_buf DB 50
+    old_len DB ?
+    old_file DB 50 DUP(0)
+
+    new_buf DB 50
+    new_len DB ?
+    new_file DB 50 DUP(0)
 .CODE
 MAIN PROC
     MOV AX, @DATA
     MOV DS, AX
     MOV ES, AX
 
-    LEA DX, msg1
+    ; Read old filename
+    LEA DX, msg_old
+    MOV AH, 09H
+    INT 21H
+    
+    LEA DX, old_buf
+    MOV AH, 0AH
+    INT 21H
+    CALL NEWLINE
+
+    ; Null-terminate old_file
+    MOV AL, old_len
+    MOV AH, 0
+    MOV SI, AX
+    MOV old_file[SI], 0
+
+    ; Read new filename
+    LEA DX, msg_new
     MOV AH, 09H
     INT 21H
 
+    LEA DX, new_buf
+    MOV AH, 0AH
+    INT 21H
+    CALL NEWLINE
+
+    ; Null-terminate new_file
+    MOV AL, new_len
+    MOV AH, 0
+    MOV SI, AX
+    MOV new_file[SI], 0
+
+    ; Rename File using INT 21H, AH=56H
     MOV AH, 56H
     LEA DX, old_file
     LEA DI, new_file
     INT 21H
     JC ERR
 
+    ; Success
     LEA DX, msg_ok
     MOV AH, 09H
     INT 21H
     JMP DONE
 ERR:
+    ; Failure
     LEA DX, msg_err
     MOV AH, 09H
     INT 21H
@@ -36,73 +74,6 @@ DONE:
 MAIN ENDP
 
 ; Utility Procedures
-GET_NUM PROC
-    PUSH BX
-    PUSH CX
-    PUSH DX
-    MOV BX, 0
-    MOV CX, 10
-    MOV AH, 01H
-READ_CHAR:
-    INT 21H
-    CMP AL, 13
-    JE END_GET_NUM
-    CMP AL, 32
-    JE END_GET_NUM
-    SUB AL, '0'
-    MOV AH, 0
-    PUSH AX
-    MOV AX, BX
-    MUL CX
-    POP DX
-    ADD AX, DX
-    MOV BX, AX
-    MOV AH, 01H
-    JMP READ_CHAR
-END_GET_NUM:
-    MOV AX, BX
-    POP DX
-    POP CX
-    POP BX
-    RET
-GET_NUM ENDP
-
-PRINT_NUM PROC
-    PUSH AX
-    PUSH BX
-    PUSH CX
-    PUSH DX
-    CMP AX, 0
-    JGE POSITIVE
-    PUSH AX
-    MOV DL, '-'
-    MOV AH, 02H
-    INT 21H
-    POP AX
-    NEG AX
-POSITIVE:
-    MOV CX, 0
-    MOV BX, 10
-DIV_LOOP:
-    MOV DX, 0
-    DIV BX
-    PUSH DX
-    INC CX
-    CMP AX, 0
-    JNE DIV_LOOP
-PRINT_LOOP:
-    POP DX
-    ADD DL, '0'
-    MOV AH, 02H
-    INT 21H
-    LOOP PRINT_LOOP
-    POP DX
-    POP CX
-    POP BX
-    POP AX
-    RET
-PRINT_NUM ENDP
-
 NEWLINE PROC
     PUSH AX
     PUSH DX
@@ -116,4 +87,5 @@ NEWLINE PROC
     POP AX
     RET
 NEWLINE ENDP
+
 END MAIN

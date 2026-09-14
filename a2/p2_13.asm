@@ -1,7 +1,7 @@
 .MODEL SMALL
 .STACK 100H
 .DATA
-    msg_time DB 'System Time (HH:MM): $'
+    msg_time DB 'System Time (HH:MM:SS): $'
     msg_date DB 'System Date (DD/MM/YYYY): $'
 .CODE
 MAIN PROC
@@ -15,14 +15,19 @@ MAIN PROC
     MOV AH, 2CH
     INT 21H
     MOV AL, CH
-    MOV AH, 0
-    CALL PRINT_NUM
+    CALL PRINT_2_DIGITS
     MOV DL, ':'
     MOV AH, 02H
     INT 21H
+    
     MOV AL, CL
-    MOV AH, 0
-    CALL PRINT_NUM
+    CALL PRINT_2_DIGITS
+    MOV DL, ':'
+    MOV AH, 02H
+    INT 21H
+
+    MOV AL, DH
+    CALL PRINT_2_DIGITS
     CALL NEWLINE
 
     LEA DX, msg_date
@@ -31,18 +36,19 @@ MAIN PROC
 
     MOV AH, 2AH
     INT 21H
+    
     MOV AL, DL
-    MOV AH, 0
-    CALL PRINT_NUM
+    CALL PRINT_2_DIGITS
     MOV DL, '/'
     MOV AH, 02H
     INT 21H
+    
     MOV AL, DH
-    MOV AH, 0
-    CALL PRINT_NUM
+    CALL PRINT_2_DIGITS
     MOV DL, '/'
     MOV AH, 02H
     INT 21H
+    
     MOV AX, CX
     CALL PRINT_NUM
     CALL NEWLINE
@@ -52,36 +58,35 @@ MAIN PROC
 MAIN ENDP
 
 ; Utility Procedures
-GET_NUM PROC
+PRINT_2_DIGITS PROC
+    ; Prints AL (assumed 0-99) as a 2-digit zero-padded number
+    PUSH AX
     PUSH BX
     PUSH CX
     PUSH DX
-    MOV BX, 0
-    MOV CX, 10
-    MOV AH, 01H
-READ_CHAR:
-    INT 21H
-    CMP AL, 13
-    JE END_GET_NUM
-    CMP AL, 32
-    JE END_GET_NUM
-    SUB AL, '0'
+
     MOV AH, 0
+    MOV BL, 10
+    DIV BL
+    ; AL has tens, AH has units
+    MOV DL, AL
+    ADD DL, '0'
     PUSH AX
-    MOV AX, BX
-    MUL CX
-    POP DX
-    ADD AX, DX
-    MOV BX, AX
-    MOV AH, 01H
-    JMP READ_CHAR
-END_GET_NUM:
-    MOV AX, BX
+    MOV AH, 02H
+    INT 21H
+
+    POP AX
+    MOV DL, AH
+    ADD DL, '0'
+    MOV AH, 02H
+    INT 21H
+
     POP DX
     POP CX
     POP BX
+    POP AX
     RET
-GET_NUM ENDP
+PRINT_2_DIGITS ENDP
 
 PRINT_NUM PROC
     PUSH AX
