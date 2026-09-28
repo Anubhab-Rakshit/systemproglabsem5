@@ -5,60 +5,68 @@ import os
 import subprocess
 import threading
 
+# Premium Apple-inspired Color Palette
 THEMES = {
     "Dark": {
-        "bg": "#1E1E1E",
-        "fg": "#D4D4D4",
-        "toolbar_bg": "#252526",
-        "toolbar_fg": "#CCCCCC",
-        "btn_hover": "#3E3E42",
-        "selection": "#264F78",
-        "cursor": "#FFFFFF",
-        "tab_bg": "#2D2D2D",
-        "tab_selected": "#1E1E1E",
-        "tab_fg": "#969696",
-        "tab_selected_fg": "#FFFFFF",
-        "terminal_bg": "#111111",
-        "terminal_fg": "#CCCCCC",
-        "statusbar_bg": "#007ACC",
-        "statusbar_fg": "#FFFFFF",
-        "keyword": "#C586C0",
-        "builtin": "#4EC9B0",
-        "string": "#CE9178",
-        "comment": "#6A9955",
-        "number": "#B5CEA8",
+        "bg": "#1E1E1E",               # Main editor background
+        "fg": "#FFFFFF",               # Main text
+        "toolbar_bg": "#282828",       # Toolbar & Status bar
+        "toolbar_fg": "#E5E5EA",       # Toolbar text
+        "btn_hover": "#3A3A3C",        # Button hover state
+        "selection": "#264F78",        # Selection color
+        "cursor": "#0A84FF",           # Apple Blue cursor
+        "tab_bg": "#282828",           # Inactive tab
+        "tab_selected": "#1E1E1E",     # Active tab
+        "tab_fg": "#8E8E93",           # Inactive tab text
+        "tab_selected_fg": "#FFFFFF",  # Active tab text
+        "terminal_bg": "#151515",      # Terminal background
+        "terminal_fg": "#32D74B",      # Terminal text (Green)
+        "statusbar_bg": "#282828",     # Status bar
+        "statusbar_fg": "#8E8E93",     # Status text
+        "keyword": "#FF9F0A",          # Orange
+        "builtin": "#0A84FF",          # Blue
+        "string": "#32D74B",           # Green
+        "comment": "#8E8E93",          # Gray
+        "number": "#FFD60A",           # Yellow
+        "border": "#38383A",           # Subtle border line
+        "run_btn": "#0A84FF",          # Run button color
+        "run_btn_fg": "#FFFFFF"
     },
     "Light": {
         "bg": "#FFFFFF",
-        "fg": "#333333",
-        "toolbar_bg": "#F3F3F3",
-        "toolbar_fg": "#333333",
-        "btn_hover": "#E5E5E5",
-        "selection": "#ADD6FF",
-        "cursor": "#000000",
-        "tab_bg": "#E8E8E8",
+        "fg": "#1C1C1E",
+        "toolbar_bg": "#F5F5F7",
+        "toolbar_fg": "#1C1C1E",
+        "btn_hover": "#E5E5EA",
+        "selection": "#B3D7FF",
+        "cursor": "#0A84FF",
+        "tab_bg": "#E5E5EA",
         "tab_selected": "#FFFFFF",
-        "tab_fg": "#666666",
-        "tab_selected_fg": "#333333",
-        "terminal_bg": "#F9F9F9",
-        "terminal_fg": "#333333",
-        "statusbar_bg": "#007ACC",
-        "statusbar_fg": "#FFFFFF",
-        "keyword": "#AF00DB",
-        "builtin": "#0000FF",
-        "string": "#A31515",
-        "comment": "#008000",
-        "number": "#098658",
+        "tab_fg": "#8E8E93",
+        "tab_selected_fg": "#000000",
+        "terminal_bg": "#F4F4F4",
+        "terminal_fg": "#1C1C1E",
+        "statusbar_bg": "#F5F5F7",
+        "statusbar_fg": "#8E8E93",
+        "keyword": "#FF9500",
+        "builtin": "#007AFF",
+        "string": "#34C759",
+        "comment": "#8E8E93",
+        "number": "#FFCC00",
+        "border": "#D1D1D6",
+        "run_btn": "#007AFF",
+        "run_btn_fg": "#FFFFFF"
     }
 }
 
 class HoverButton(tk.Label):
-    def __init__(self, master, text, command, theme_mode, bold=False, color_override=None, **kwargs):
-        f = ("Helvetica", 12, "bold") if bold else ("Helvetica", 12)
-        super().__init__(master, text=text, padx=12, pady=6, font=f, cursor="hand2", **kwargs)
+    def __init__(self, master, text, command, theme_mode, bold=False, is_primary=False, **kwargs):
+        self.is_primary = is_primary
+        f = ("Helvetica Neue", 13, "bold") if bold else ("Helvetica Neue", 13)
+        # Added nice padding to make buttons look premium and clickable
+        super().__init__(master, text=text, padx=16, pady=8, font=f, cursor="hand2", **kwargs)
         self.command = command
         self.theme_mode = theme_mode
-        self.color_override = color_override
         self.bind("<Enter>", self.on_enter)
         self.bind("<Leave>", self.on_leave)
         self.bind("<Button-1>", self.on_click)
@@ -67,16 +75,20 @@ class HoverButton(tk.Label):
     def update_theme(self, theme_mode):
         self.theme_mode = theme_mode
         t = THEMES[self.theme_mode]
-        fg_color = self.color_override if self.color_override else t["toolbar_fg"]
-        self.configure(bg=t["toolbar_bg"], fg=fg_color)
+        if self.is_primary:
+            self.configure(bg=t["run_btn"], fg=t["run_btn_fg"])
+        else:
+            self.configure(bg=t["toolbar_bg"], fg=t["toolbar_fg"])
 
     def on_enter(self, e):
         t = THEMES[self.theme_mode]
-        self.configure(bg=t["btn_hover"])
+        if self.is_primary:
+            self.configure(bg=t["selection"]) 
+        else:
+            self.configure(bg=t["btn_hover"])
 
     def on_leave(self, e):
-        t = THEMES[self.theme_mode]
-        self.configure(bg=t["toolbar_bg"])
+        self.update_theme(self.theme_mode)
 
     def on_click(self, e):
         if self.command:
@@ -84,7 +96,7 @@ class HoverButton(tk.Label):
 
 class HoverMenuButton(tk.Menubutton):
     def __init__(self, master, text, theme_mode, **kwargs):
-        super().__init__(master, text=text, padx=12, pady=6, font=("Helvetica", 12, "bold"), cursor="hand2", relief="flat", bd=0, highlightthickness=0, **kwargs)
+        super().__init__(master, text=text, padx=16, pady=8, font=("Helvetica Neue", 13), cursor="hand2", relief="flat", bd=0, highlightthickness=0, **kwargs)
         self.theme_mode = theme_mode
         self.bind("<Enter>", self.on_enter)
         self.bind("<Leave>", self.on_leave)
@@ -100,8 +112,7 @@ class HoverMenuButton(tk.Menubutton):
         self.configure(bg=t["btn_hover"])
 
     def on_leave(self, e):
-        t = THEMES[self.theme_mode]
-        self.configure(bg=t["toolbar_bg"])
+        self.update_theme(self.theme_mode)
 
 class SyntaxHighlighter:
     def __init__(self, text_widget):
@@ -109,8 +120,8 @@ class SyntaxHighlighter:
         self.language = "Plain Text"
         
         self.patterns = {
-            "keyword": r'\b(def|class|if|else|elif|for|while|return|import|from|as|pass|break|continue|in|is|and|or|not|try|except|finally|with|void|int|char|double|float|long|struct|sizeof)\b',
-            "builtin": r'\b(str|bool|list|dict|set|tuple|print|len|range|open|True|False|None|printf|scanf|malloc|free)\b',
+            "keyword": r'\b(def|class|if|else|elif|for|while|return|import|from|as|pass|break|continue|in|is|and|or|not|try|except|finally|with|void|int|char|double|float|long|struct|sizeof|public|private|protected|interface|extends|implements|new|this|super|namespace|using|template)\b',
+            "builtin": r'\b(str|bool|list|dict|set|tuple|print|len|range|open|True|False|None|printf|scanf|malloc|free|cout|cin|System|out|println|String)\b',
             "number": r'\b\d+\b',
             "string": r'".*?"|\'.*?\'',
             "comment": r'#.*$|//.*$'
@@ -244,30 +255,35 @@ class EditorTab(tk.Frame):
         
         self.text_font = font.Font(family=font_family, size=font_size)
         
-        self.paned_window = tk.PanedWindow(self, orient=tk.VERTICAL, bd=0, sashwidth=2)
+        # PanedWindow with 0 border for flat UI
+        self.paned_window = tk.PanedWindow(self, orient=tk.VERTICAL, bd=0, sashwidth=4, bg="#38383A")
         self.paned_window.pack(expand=True, fill='both')
         
         # --- Editor Area ---
-        self.editor_frame = tk.Frame(self.paned_window)
+        self.editor_frame = tk.Frame(self.paned_window, bd=0)
         
-        self.find_bar = tk.Frame(self.editor_frame, height=30)
-        self.find_lbl = tk.Label(self.find_bar, text="Find:", font=("Helvetica", 11))
-        self.find_lbl.pack(side="left", padx=5)
-        self.find_entry = tk.Entry(self.find_bar, width=15, relief="flat", highlightthickness=1)
-        self.find_entry.pack(side="left", padx=5)
-        self.rep_lbl = tk.Label(self.find_bar, text="Replace:", font=("Helvetica", 11))
-        self.rep_lbl.pack(side="left", padx=5)
-        self.rep_entry = tk.Entry(self.find_bar, width=15, relief="flat", highlightthickness=1)
-        self.rep_entry.pack(side="left", padx=5)
-        HoverButton(self.find_bar, text="Next", command=self.find_next, theme_mode=initial_theme).pack(side="left")
-        HoverButton(self.find_bar, text="Replace", command=self.replace_text, theme_mode=initial_theme).pack(side="left")
-        HoverButton(self.find_bar, text="✕", command=self.hide_find_bar, theme_mode=initial_theme).pack(side="right")
+        self.find_bar = tk.Frame(self.editor_frame, height=40)
+        self.find_lbl = tk.Label(self.find_bar, text="Find:", font=("Helvetica Neue", 12))
+        self.find_lbl.pack(side="left", padx=(15, 5), pady=5)
+        self.find_entry = tk.Entry(self.find_bar, width=20, relief="flat", highlightthickness=1, font=("Helvetica Neue", 12))
+        self.find_entry.pack(side="left", padx=5, pady=5)
+        self.find_entry.bind("<Return>", lambda e: self.find_next())
+        self.rep_lbl = tk.Label(self.find_bar, text="Replace:", font=("Helvetica Neue", 12))
+        self.rep_lbl.pack(side="left", padx=5, pady=5)
+        self.rep_entry = tk.Entry(self.find_bar, width=20, relief="flat", highlightthickness=1, font=("Helvetica Neue", 12))
+        self.rep_entry.pack(side="left", padx=5, pady=5)
+        self.rep_entry.bind("<Return>", lambda e: self.replace_text())
+        HoverButton(self.find_bar, text="Next", command=self.find_next, theme_mode=initial_theme).pack(side="left", padx=5)
+        HoverButton(self.find_bar, text="Replace", command=self.replace_text, theme_mode=initial_theme).pack(side="left", padx=5)
+        HoverButton(self.find_bar, text="✕", command=self.hide_find_bar, theme_mode=initial_theme).pack(side="right", padx=10)
         self.find_visible = False
         
+        # Fluid padding (padx=30, pady=25) for a premium text editing experience
         self.text_area = tk.Text(
             self.editor_frame,
             font=self.text_font, wrap='none', undo=True,
-            padx=20, pady=20, relief="flat", bd=0, highlightthickness=0
+            padx=30, pady=25, relief="flat", bd=0, highlightthickness=0,
+            insertwidth=2, spacing1=4, spacing3=4
         )
         self.text_area.pack(expand=True, fill='both', side='left')
         
@@ -284,18 +300,18 @@ class EditorTab(tk.Frame):
         self.paned_window.add(self.editor_frame, stretch="always")
         
         # --- Terminal Area ---
-        self.terminal_frame = tk.Frame(self.paned_window)
-        self.term_header = tk.Frame(self.terminal_frame, height=25)
+        self.terminal_frame = tk.Frame(self.paned_window, bd=0)
+        self.term_header = tk.Frame(self.terminal_frame, height=35)
         self.term_header.pack(fill='x', side='top')
-        self.term_label = tk.Label(self.term_header, text=" INTERACTIVE TERMINAL", font=("Helvetica", 11, "bold"))
-        self.term_label.pack(side="left", padx=10, pady=2)
+        self.term_label = tk.Label(self.term_header, text="  TERMINAL", font=("Helvetica Neue", 11, "bold"))
+        self.term_label.pack(side="left", padx=15, pady=8)
         HoverButton(self.term_header, text="✕", command=self.hide_terminal, theme_mode=initial_theme).pack(side="right")
         
         self.terminal_area = tk.Text(
             self.terminal_frame,
             font=font.Font(family=font_family, size=font_size-2),
             wrap='word', relief="flat", bd=0, highlightthickness=0,
-            height=12, padx=10, pady=10
+            height=12, padx=20, pady=15, insertwidth=2
         )
         self.terminal_area.pack(expand=True, fill='both', side='left')
         
@@ -319,12 +335,14 @@ class EditorTab(tk.Frame):
     def update_theme(self, theme_mode):
         t = THEMES[theme_mode]
         self.configure(bg=t["bg"])
-        self.paned_window.configure(bg=t["toolbar_bg"])
+        self.paned_window.configure(bg=t["border"])
         self.editor_frame.configure(bg=t["bg"])
         
         self.find_bar.configure(bg=t["toolbar_bg"])
         self.find_lbl.configure(bg=t["toolbar_bg"], fg=t["toolbar_fg"])
         self.rep_lbl.configure(bg=t["toolbar_bg"], fg=t["toolbar_fg"])
+        self.find_entry.configure(bg=t["bg"], fg=t["fg"], insertbackground=t["cursor"], highlightcolor=t["border"])
+        self.rep_entry.configure(bg=t["bg"], fg=t["fg"], insertbackground=t["cursor"], highlightcolor=t["border"])
         
         for btn in self.find_bar.winfo_children():
             if isinstance(btn, HoverButton): btn.update_theme(theme_mode)
@@ -362,19 +380,29 @@ class EditorTab(tk.Frame):
         s = self.find_entry.get()
         if s:
             idx = self.text_area.search(s, tk.INSERT, nocase=1, stopindex=tk.END)
+            if not idx:
+                idx = self.text_area.search(s, "1.0", nocase=1, stopindex=tk.INSERT)
+                
             if idx:
                 lastidx = f"{idx}+{len(s)}c"
                 self.text_area.tag_add("found", idx, lastidx)
                 self.text_area.tag_config("found", background="#FFFF00", foreground="#000000")
                 self.text_area.mark_set(tk.INSERT, lastidx)
                 self.text_area.see(tk.INSERT)
-                self.text_area.focus_set()
 
     def replace_text(self):
         if self.text_area.tag_ranges("found"):
+            idx = self.text_area.index("found.first")
             self.text_area.delete("found.first", "found.last")
-            self.text_area.insert("found.first", self.rep_entry.get())
+            self.text_area.insert(idx, self.rep_entry.get())
             self.find_next()
+        else:
+            self.find_next()
+            if self.text_area.tag_ranges("found"):
+                idx = self.text_area.index("found.first")
+                self.text_area.delete("found.first", "found.last")
+                self.text_area.insert(idx, self.rep_entry.get())
+                self.find_next()
 
     def on_key_release(self, event=None):
         self.status_callback(event)
@@ -402,22 +430,31 @@ class Notepad:
     def __init__(self, root):
         self.root = root
         self.root.title("Notepad")
-        self.root.geometry("1200x850")
+        self.root.geometry("1280x850")
         self.current_theme = "Dark"
         
         self.style = ttk.Style()
+        # Clam theme enables flat borderless notebooks
         if 'clam' in self.style.theme_names():
             self.style.theme_use('clam')
             
-        self.font_family = "Menlo"
+        self.font_family = "Menlo" # Apple native monospace
         self.font_size = 15
         
         self.create_menu()
         self.create_toolbar()
         
+        # Separator line under toolbar
+        self.toolbar_sep = tk.Frame(self.root, height=1)
+        self.toolbar_sep.pack(fill='x', side='top')
+        
         self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(expand=True, fill='both', padx=0, pady=0)
+        self.notebook.pack(expand=True, fill='both')
         self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_change)
+        
+        # Separator line above status bar
+        self.status_sep = tk.Frame(self.root, height=1)
+        self.status_sep.pack(fill='x', side='bottom')
         
         self.create_status_bar()
         self.setup_theme_styles()
@@ -454,12 +491,19 @@ class Notepad:
         t = THEMES[self.current_theme]
         self.root.configure(bg=t["bg"])
         
-        self.style.configure("TNotebook", background=t["toolbar_bg"], borderwidth=0)
-        self.style.configure("TNotebook.Tab", padding=[20, 10], font=('Helvetica', 12), 
-                             background=t["tab_bg"], foreground=t["tab_fg"], borderwidth=0)
+        # Style flat premium tabs
+        self.style.configure("TNotebook", background=t["toolbar_bg"], borderwidth=0, padding=0)
+        self.style.configure("TNotebook.Tab", 
+                             padding=[20, 10], font=('Helvetica Neue', 13), 
+                             background=t["tab_bg"], foreground=t["tab_fg"], 
+                             borderwidth=0, focuscolor=t["tab_selected"])
+        
         self.style.map("TNotebook.Tab", 
                        background=[("selected", t["tab_selected"])], 
                        foreground=[("selected", t["tab_selected_fg"])])
+                       
+        self.toolbar_sep.configure(bg=t["border"])
+        self.status_sep.configure(bg=t["border"])
                        
         if hasattr(self, 'toolbar'):
             self.toolbar.configure(bg=t["toolbar_bg"])
@@ -485,41 +529,45 @@ class Notepad:
     def create_menu(self):
         self.menu_bar = tk.Menu(self.root)
         self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
-        self.file_menu.add_command(label="New Tab", command=self.new_file, accelerator="Ctrl+N")
-        self.file_menu.add_command(label="Open...", command=self.open_file, accelerator="Ctrl+O")
-        self.file_menu.add_command(label="Save", command=self.save_file, accelerator="Ctrl+S")
+        self.file_menu.add_command(label="New Tab", command=self.new_file, accelerator="Cmd+N")
+        self.file_menu.add_command(label="Open...", command=self.open_file, accelerator="Cmd+O")
+        self.file_menu.add_command(label="Save", command=self.save_file, accelerator="Cmd+S")
         self.file_menu.add_command(label="Save As...", command=self.save_as_file)
         self.file_menu.add_separator()
-        self.file_menu.add_command(label="Close Tab", command=self.close_current_tab, accelerator="Ctrl+W")
+        self.file_menu.add_command(label="Close Tab", command=self.close_current_tab, accelerator="Cmd+W")
         self.file_menu.add_command(label="Exit", command=self.exit_app)
         self.menu_bar.add_cascade(label="File", menu=self.file_menu)
         
         self.edit_menu = tk.Menu(self.menu_bar, tearoff=0)
-        self.edit_menu.add_command(label="Find / Replace", command=self.toggle_find, accelerator="Ctrl+F")
+        self.edit_menu.add_command(label="Find / Replace", command=self.toggle_find, accelerator="Cmd+F")
         self.menu_bar.add_cascade(label="Edit", menu=self.edit_menu)
 
         self.lang_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.lang_menu.add_command(label="Plain Text", command=lambda: self.set_language("Plain Text"))
         self.lang_menu.add_command(label="Python", command=lambda: self.set_language("Python"))
         self.lang_menu.add_command(label="C", command=lambda: self.set_language("C"))
+        self.lang_menu.add_command(label="C++", command=lambda: self.set_language("C++"))
+        self.lang_menu.add_command(label="Java", command=lambda: self.set_language("Java"))
         self.menu_bar.add_cascade(label="Language", menu=self.lang_menu)
         
         self.root.config(menu=self.menu_bar)
 
     def create_toolbar(self):
-        self.toolbar = tk.Frame(self.root, bd=0)
-        self.toolbar.pack(side="top", fill="x", pady=0)
+        self.toolbar = tk.Frame(self.root, bd=0, padx=15, pady=8)
+        self.toolbar.pack(side="top", fill="x")
         
-        HoverButton(self.toolbar, "New", self.new_file, self.current_theme).pack(side="left")
-        HoverButton(self.toolbar, "Open", self.open_file, self.current_theme).pack(side="left")
-        HoverButton(self.toolbar, "Save", self.save_file, self.current_theme).pack(side="left")
-        HoverButton(self.toolbar, "Close Tab", self.close_current_tab, self.current_theme).pack(side="left")
+        # Left Group
+        HoverButton(self.toolbar, "New", self.new_file, self.current_theme).pack(side="left", padx=2)
+        HoverButton(self.toolbar, "Open", self.open_file, self.current_theme).pack(side="left", padx=2)
+        HoverButton(self.toolbar, "Save", self.save_file, self.current_theme).pack(side="left", padx=2)
+        HoverButton(self.toolbar, "Close Tab", self.close_current_tab, self.current_theme).pack(side="left", padx=2)
         
+        # Right Group
         self.theme_btn = HoverButton(self.toolbar, self.current_theme, self.switch_theme, self.current_theme)
-        self.theme_btn.pack(side="right")
+        self.theme_btn.pack(side="right", padx=2)
         
-        HoverButton(self.toolbar, "Run Code", self.run_code, self.current_theme, bold=True, color_override="#4EC9B0").pack(side="right", padx=10)
-        HoverButton(self.toolbar, "Terminal", self.toggle_terminal_btn, self.current_theme).pack(side="right")
+        HoverButton(self.toolbar, "Run Code", self.run_code, self.current_theme, bold=True, is_primary=True).pack(side="right", padx=10)
+        HoverButton(self.toolbar, "Terminal", self.toggle_terminal_btn, self.current_theme).pack(side="right", padx=2)
 
         # Premium Language Selector Dropdown
         self.lang_btn = HoverMenuButton(self.toolbar, text="Plain Text ▼", theme_mode=self.current_theme)
@@ -527,6 +575,8 @@ class Notepad:
         self.lang_menu_tb.add_command(label="Plain Text", command=lambda: self.set_language("Plain Text"))
         self.lang_menu_tb.add_command(label="Python", command=lambda: self.set_language("Python"))
         self.lang_menu_tb.add_command(label="C", command=lambda: self.set_language("C"))
+        self.lang_menu_tb.add_command(label="C++", command=lambda: self.set_language("C++"))
+        self.lang_menu_tb.add_command(label="Java", command=lambda: self.set_language("Java"))
         self.lang_btn.config(menu=self.lang_menu_tb)
         self.lang_btn.pack(side="right", padx=10)
 
@@ -544,7 +594,7 @@ class Notepad:
         
         self.status_bar = tk.Label(
             self.root, textvariable=self.status_var, anchor='e', 
-            font=("Helvetica", 12, "bold"), padx=15, pady=4
+            font=("Helvetica Neue", 12), padx=25, pady=8
         )
         self.status_bar.pack(side='bottom', fill='x')
 
@@ -560,6 +610,8 @@ class Notepad:
     def auto_detect_language(self, filepath):
         if filepath.endswith(".py"): return "Python"
         if filepath.endswith(".c"): return "C"
+        if filepath.endswith((".cpp", ".cc", ".cxx")): return "C++"
+        if filepath.endswith(".java"): return "Java"
         return "Plain Text"
 
     def new_file(self):
@@ -657,7 +709,23 @@ class Notepad:
                     if compile_proc.returncode != 0:
                         tab.terminal.text_widget.after(0, lambda: write_res(f"[COMPILATION ERROR]\n{c_stderr}\n"))
                         return
-                    process = subprocess.Popen([out_exe], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    process = subprocess.Popen([f"./{os.path.basename(out_exe)}"], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                elif lang == 'C++':
+                    out_exe = filepath[:filepath.rfind('.')] if '.' in filepath else filepath + "_out"
+                    compile_proc = subprocess.Popen(['g++', filepath, '-o', out_exe], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    cpp_stdout, cpp_stderr = compile_proc.communicate()
+                    if compile_proc.returncode != 0:
+                        tab.terminal.text_widget.after(0, lambda: write_res(f"[COMPILATION ERROR]\n{cpp_stderr}\n"))
+                        return
+                    process = subprocess.Popen([f"./{os.path.basename(out_exe)}"], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                elif lang == 'Java':
+                    compile_proc = subprocess.Popen(['javac', filepath], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    j_stdout, j_stderr = compile_proc.communicate()
+                    if compile_proc.returncode != 0:
+                        tab.terminal.text_widget.after(0, lambda: write_res(f"[COMPILATION ERROR]\n{j_stderr}\n"))
+                        return
+                    class_name = os.path.splitext(os.path.basename(filepath))[0]
+                    process = subprocess.Popen(['java', class_name], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                 else:
                     tab.terminal.text_widget.after(0, lambda: write_res(f"[ERROR] Cannot run files of Language Type: {lang}.\n"))
                     return
